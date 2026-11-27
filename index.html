@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>تطبيق الطلاب</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@900&family=Tajawal:wght@400;700;900&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#0a0709;--surface:#171014;--line:#2e1d24;--text:#f4eaee;--muted:#a58f98;--accent:#c4143c;--accent-ink:#fff}
+@media (prefers-color-scheme:light){:root:not([data-theme="dark"]){--bg:#faf3f5;--surface:#fff;--line:#ecd9df;--text:#1d1216;--muted:#7a636c}}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+body{margin:0;background:var(--bg);color:var(--text);font-family:"Tajawal",system-ui,sans-serif;min-height:100vh}
+main{max-width:520px;margin:0 auto;padding:calc(28px + env(safe-area-inset-top,0px)) 20px calc(48px + env(safe-area-inset-bottom,0px))}
+h1{font-size:34px;font-weight:900;line-height:1.25;margin:8px 0 8px}
+p.sub{color:var(--muted);margin:0 0 28px;font-size:17px;line-height:1.7}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.grade{background:var(--surface);border:1px solid var(--line);border-radius:18px;padding:22px 16px;text-align:right;color:var(--text);font:inherit;cursor:pointer;min-height:112px;display:flex;flex-direction:column;justify-content:space-between}
+.grade b{font-size:23px;font-weight:900}
+.grade span{color:var(--muted);font-size:14px}
+.grade:active{transform:scale(.98)}
+.back{background:none;border:0;color:var(--muted);font:inherit;font-size:16px;padding:8px 0;cursor:pointer}
+.tabs{display:flex;gap:8px;margin:0 0 20px}
+.tab{flex:1;padding:12px;border-radius:12px;border:1px solid var(--line);background:none;color:var(--muted);font:inherit;font-weight:700;cursor:pointer}
+.tab[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.list{display:flex;flex-direction:column;gap:10px}
+.subject{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:18px;color:var(--text);font:inherit;font-size:18px;font-weight:700;text-align:right;cursor:pointer}
+.empty{background:var(--surface);border:1px dashed var(--line);border-radius:16px;padding:28px 20px;color:var(--muted);line-height:1.8;font-size:17px}
+:focus-visible{outline:2px solid var(--accent);outline-offset:3px}
+[hidden]{display:none!important}
+
+#splash{position:fixed;inset:0;z-index:50;background:#04010a;transition:opacity .8s ease}
+#splash.out{opacity:0;pointer-events:none}
+#fx{width:100%;height:100%;display:block}
+#enter{position:absolute;left:50%;bottom:calc(40px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);padding:15px 42px;border-radius:40px;border:1px solid #ffe28a;background:linear-gradient(180deg,#ffe28a,#c98d1c);color:#2a1500;font:inherit;font-size:19px;font-weight:900;cursor:pointer;opacity:0;pointer-events:none;transition:opacity 1s ease;box-shadow:0 0 26px rgba(255,190,60,.55)}
+#enter.show{opacity:1;pointer-events:auto}
+</style>
+</head>
+<body>
+
+<div id="splash">
+  <canvas id="fx"></canvas>
+  <button id="enter">ابدأ 🖤</button>
+</div>
+
+<div id="app" hidden>
+<main>
+  <section id="home">
+    <h1>مدرستك بجيبك 🖤</h1>
+    <p class="sub">اختر صفّك وابدأ المراجعة.</p>
+    <div class="grid">
+      <button class="grade" data-g="9"><b>التاسع</b><span>شهادة التعليم الأساسي</span></button>
+      <button class="grade" data-g="10"><b>العاشر</b><span>الأول الثانوي</span></button>
+      <button class="grade" data-g="11"><b>الحادي عشر</b><span>علمي / أدبي</span></button>
+      <button class="grade" data-g="12"><b>البكالوريا</b><span>علمي / أدبي</span></button>
+    </div>
+  </section>
+
+  <section id="subjects" hidden>
+    <button class="back" id="back1">‹ رجوع</button>
+    <h1 id="gtitle"></h1>
+    <div class="tabs" id="tabs" hidden>
+      <button class="tab" data-b="sci" aria-pressed="true">علمي</button>
+      <button class="tab" data-b="lit" aria-pressed="false">أدبي</button>
+    </div>
+    <div class="list" id="list"></div>
+  </section>
+
+  <section id="subject" hidden>
+    <button class="back" id="back2">‹ المواد</button>
+    <h1 id="stitle"></h1>
+    <div class="empty">هنا ستظهر الدروس والاختبارات. نبنيها في الخطوة القادمة.</div>
+  </section>
+</main>
+</div>
+
+<script>
+/* ===== شاشة البداية: القلب ثم الاسم ===== */
+var NAME="Ayla"; // غيّر الاسم من هنا
+function $(i){return document.getElementById(i)}
+var cv=$("fx"),ctx=cv.getContext("2d");
+var hl=document.createElement("canvas"),hc=hl.getContext("2d");
+var nl=document.createElement("canvas"),nc=nl.getContext("2d");
+var W,H,dpr,fs,pts=[],sparks=[],dust=[],hearts=[],drawn=0,N=1500;
+var t0=0,skip=0,lastT=0,raf=0,shown=false;
+var GA=137.50776*Math.PI/180;
+var PAL=["#ffe066","#ffaa00","#ff5500","#ff0066","#d400ff","#8800ff","#00e5ff","#ffffff"];
+function hp(t){return [16*Math.pow(Math.sin(t),3),13*Math.cos(t)-5*Math.cos(2*t)-2*Math.cos(3*t)-Math.cos(4*t)]}
+function clamp(v,a,b){return Math.max(a,Math.min(b,v))}
+
+function size(){
+  dpr=Math.min(window.devicePixelRatio||1,2);W=innerWidth;H=innerHeight;
+  [cv,hl,nl].forEach(function(c){c.width=Math.round(W*dpr);c.height=Math.round(H*dpr)});
+  ctx.setTransform(dpr,0,0,dpr,0,0);hc.setTransform(dpr,0,0,dpr,0,0);nc.setTransform(dpr,0,0,dpr,0,0);
+  drawn=0;buildName();buildAmbient();
+}
+
+function buildAmbient(){
+  dust=[];hearts=[];
+  for(var i=0;i<70;i++)dust.push({x:Math.random()*W,y:Math.random()*H,r:.6+Math.random()*1.9,v:4+Math.random()*14,p:Math.random()*6.28});
+  for(var j=0;j<9;j++)hearts.push({x:Math.random()*W,y:Math.random()*H,s:.7+Math.random()*1.1,v:8+Math.random()*14,p:Math.random()*6.28});
+}
+
+function crown(g,x,y,s,rot){
+  g.save();g.translate(x,y);g.rotate(rot);g.scale(s,s);
+  g.shadowColor="rgba(255,200,80,.9)";g.shadowBlur=18;
+  var gr=g.createLinearGradient(0,-72,0,2);
+  gr.addColorStop(0,"#fff3b0");gr.addColorStop(.5,"#f7c948");gr.addColorStop(1,"#b9801a");
+  g.fillStyle=gr;g.strokeStyle="#fff6cf";g.lineWidth=1.6;
+  g.beginPath();
+  g.moveTo(-50,-12);g.lineTo(-58,-58);g.lineTo(-30,-34);g.lineTo(-16,-70);g.lineTo(0,-36);
+  g.lineTo(16,-70);g.lineTo(30,-34);g.lineTo(58,-58);g.lineTo(50,-12);g.closePath();g.fill();g.stroke();
+  g.beginPath();g.rect(-50,-12,100,14);g.fill();g.stroke();
+  g.shadowBlur=6;
+  [[-58,-58],[-16,-70],[16,-70],[58,-58]].forEach(function(p){
+    g.fillStyle="#fff";g.beginPath();g.arc(p[0],p[1],5,0,6.28);g.fill();
+  });
+  [-36,-18,18,36].forEach(function(x){
+    g.fillStyle="#dff7ff";g.beginPath();g.arc(x,-5,4,0,6.28);g.fill();
+  });
+  g.fillStyle="#ff2a6d";g.beginPath();g.arc(0,-24,7,0,6.28);g.fill();
+  g.fillStyle="#fff";g.beginPath();g.arc(-2,-26,2,0,6.28);g.fill();
+  g.restore();
+}
+
+function buildName(){
+  nc.clearRect(0,0,W,H);pts=[];sparks=[];
+  fs=Math.min(W*.3,210);
+  var font="900 "+fs+"px 'Playfair Display',Georgia,serif";
+  var cx=W/2,by=H*.5+fs*.3;
+  nc.font=font;nc.textAlign="center";
+  var tw=nc.measureText(NAME).width,left=cx-tw/2;
+  // أخذ عينات من شكل الحروف
+  var oc=document.createElement("canvas");oc.width=W;oc.height=H;
+  var o=oc.getContext("2d");o.font=font;o.textAlign="center";o.fillText(NAME,cx,by);
+  var d=o.getImageData(0,0,W,H).data,step=Math.max(4,Math.round(fs/24));
+  for(var y=0;y<H;y+=step)for(var x=0;x<W;x+=step){if(d[(y*W+x)*4+3]>140)pts.push([x,y])}
+  // الحروف الذهبية
+  var gr=nc.createLinearGradient(0,by-fs*.75,0,by);
+  gr.addColorStop(0,"#fff3b0");gr.addColorStop(.45,"#f7c948");gr.addColorStop(.75,"#b9801a");gr.addColorStop(1,"#ffe28a");
+  nc.shadowColor="rgba(255,190,60,.95)";nc.shadowBlur=32;nc.fillStyle=gr;nc.fillText(NAME,cx,by);
+  nc.shadowBlur=0;nc.strokeStyle="#fff6cf";nc.lineWidth=2;nc.strokeText(NAME,cx,by);
+  // الألماس
+  pts.forEach(function(p,i){
+    nc.fillStyle="#fffbe8";nc.beginPath();nc.arc(p[0],p[1],2.3,0,6.28);nc.fill();
+    nc.strokeStyle="#c8902a";nc.lineWidth=.6;nc.stroke();
+    nc.fillStyle="#fff";nc.beginPath();nc.arc(p[0]-.6,p[1]-.6,.8,0,6.28);nc.fill();
+  });
+  // اللؤلؤ
+  pts.forEach(function(p,i){
+    if(i%11!==0)return;
+    var r=fs/38,pg=nc.createRadialGradient(p[0]-r*.3,p[1]-r*.3,r*.1,p[0],p[1],r);
+    pg.addColorStop(0,"#fff");pg.addColorStop(.6,"#f3e6d0");pg.addColorStop(1,"#c9b79c");
+    nc.fillStyle=pg;nc.beginPath();nc.arc(p[0],p[1],r,0,6.28);nc.fill();
+  });
+  // التاج فوق حرف A
+  crown(nc,left+fs*.38,by-fs*.66,fs/125,-.2);
+  // نقاط اللمعان
+  for(var k=0;k<34&&pts.length;k++){
+    sparks.push({p:pts[Math.floor(Math.random()*pts.length)],r:6+Math.random()*9,ph:Math.random()*6.28,sp:1.2+Math.random()*2.2});
+  }
+}
+
+function bloom(a,b){
+  var sc=Math.min(W*.9,H*.6)/34,cx=W/2,cy=H*.46;
+  hc.globalCompositeOperation="lighter";
+  for(var i=a;i<b;i++){
+    var r=Math.sqrt((i+1)/N),p=hp(i*GA),c=PAL[i%PAL.length];
+    hc.shadowColor=c;hc.shadowBlur=12;hc.fillStyle=c;hc.globalAlpha=.55+.45*r;
+    hc.beginPath();hc.arc(cx+p[0]*sc*r,cy-(p[1]+2.5)*sc*r,1.1+2.6*r,0,6.28);hc.fill();
+  }
+  hc.globalAlpha=1;
+}
+
+function star(x,y,r,a){
+  ctx.save();ctx.translate(x,y);ctx.globalAlpha=a;
+  ctx.shadowColor="#ffd45a";ctx.shadowBlur=14;ctx.fillStyle="#fff";
+  ctx.beginPath();ctx.moveTo(0,-r);ctx.quadraticCurveTo(0,0,r,0);ctx.quadraticCurveTo(0,0,0,r);
+  ctx.quadraticCurveTo(0,0,-r,0);ctx.quadraticCurveTo(0,0,0,-r);ctx.fill();ctx.restore();
+}
+
+function miniHeart(x,y,s,a){
+  ctx.save();ctx.translate(x,y);ctx.scale(s,-s);ctx.globalAlpha=a;
+  ctx.fillStyle="#f7c948";ctx.shadowColor="#ffd45a";ctx.shadowBlur=10;ctx.beginPath();
+  for(var k=0;k<=40;k++){var p=hp(k/40*6.2832);if(k)ctx.lineTo(p[0],p[1]);else ctx.moveTo(p[0],p[1])}
+  ctx.closePath();ctx.fill();ctx.restore();
+}
+
+function frame(now){
+  if(!t0)t0=now;
+  var t=(now-t0)/1000+skip;lastT=t;
+  ctx.globalCompositeOperation="source-over";ctx.globalAlpha=1;ctx.shadowBlur=0;
+  ctx.clearRect(0,0,W,H);
+  var g=ctx.createRadialGradient(W/2,H*.45,0,W/2,H*.45,Math.max(W,H)*.8);
+  g.addColorStop(0,"#1a0614");g.addColorStop(1,"#04010a");
+  ctx.fillStyle=g;ctx.fillRect(0,0,W,H);
+  // غبار ذهبي
+  dust.forEach(function(d){
+    var y=((d.y-t*d.v)%(H+20)+H+20)%(H+20)-10;
+    ctx.globalAlpha=.25+.45*Math.abs(Math.sin(t*1.3+d.p));
+    ctx.fillStyle="#ffd98a";ctx.beginPath();ctx.arc(d.x,y,d.r,0,6.28);ctx.fill();
+  });
+  ctx.globalAlpha=1;
+  var ph=clamp((t-5.2)/1.3,0,1);
+  // مرحلة القلب
+  if(ph<1){
+    var target=Math.min(N,Math.floor(t/3.2*N));
+    if(target>drawn){bloom(drawn,target);drawn=target}
+    var cx=W/2,cy=H*.46;
+    var pulse=t<3.2?.85+.15*(t/3.2):1+.045*Math.sin((t-3.2)*5.5);
+    var sc=pulse*(1+.7*ph);
+    var hg=ctx.createRadialGradient(cx,cy,0,cx,cy,Math.min(W,H)*.5);
+    hg.addColorStop(0,"rgba(255,0,102,.28)");hg.addColorStop(1,"rgba(255,0,102,0)");
+    ctx.globalAlpha=(1-ph)*Math.min(1,t/2);ctx.fillStyle=hg;ctx.fillRect(0,0,W,H);
+    ctx.save();ctx.globalAlpha=1-ph;
+    ctx.translate(cx,cy);ctx.scale(sc,sc);ctx.translate(-cx,-cy);
+    ctx.drawImage(hl,0,0,W,H);ctx.restore();
+  }
+  // مرحلة الاسم
+  if(ph>0){
+    hearts.forEach(function(h){
+      var y=((h.y-t*h.v)%(H+80)+H+80)%(H+80)-40;
+      miniHeart(h.x+Math.sin(t+h.p)*10,y,h.s,ph*(.35+.3*Math.sin(t*1.5+h.p)));
+    });
+    ctx.globalAlpha=ph;ctx.drawImage(nl,0,0,W,H);
+    ctx.font=(fs*.75)+"px serif";ctx.textBaseline="alphabetic";ctx.shadowColor="rgba(255,40,80,.7)";ctx.shadowBlur=18;
+    ctx.textAlign="left";ctx.fillText("🌹",-fs*.05,H-8);
+    ctx.textAlign="right";ctx.fillText("🌹",W+fs*.05,H-8);
+    ctx.shadowBlur=0;
+    sparks.forEach(function(s){
+      var a=Math.max(0,Math.sin(t*s.sp+s.ph));
+      if(a>.05)star(s.p[0],s.p[1],s.r*a+2,ph*a);
+    });
+    ctx.globalAlpha=1;
+  }
+  if(t>7.2&&!shown){shown=true;$("enter").classList.add("show")}
+  raf=requestAnimationFrame(frame);
+}
+
+function start(){size();raf=requestAnimationFrame(frame)}
+var started=false;
+function go(){if(started)return;started=true;start()}
+if(document.fonts&&document.fonts.load){
+  Promise.race([document.fonts.load("900 100px 'Playfair Display'"),new Promise(function(r){setTimeout(r,1500)})]).then(go,go);
+}else go();
+window.addEventListener("resize",function(){if(started)size()});
+cv.addEventListener("click",function(){if(lastT<5.2)skip+=5.2-lastT});
+$("enter").onclick=function(){
+  $("splash").classList.add("out");$("app").hidden=false;
+  setTimeout(function(){cancelAnimationFrame(raf);$("splash").style.display="none"},850);
+};
+
+/* ===== التطبيق ===== */
+var common=["اللغة العربية","اللغة الإنكليزية","اللغة الفرنسية","التربية الدينية"];
+var DATA={
+ "9":{t:"التاسع",s:["الرياضيات","الفيزياء","الكيمياء","علوم الحياة","التاريخ","الجغرافيا"].concat(common)},
+ "10":{t:"العاشر",s:["الرياضيات","الفيزياء","الكيمياء","علوم الحياة","التاريخ","الجغرافيا"].concat(common)},
+ "11":{t:"الحادي عشر",sci:["الرياضيات","الفيزياء","الكيمياء","علوم الحياة"].concat(common),lit:["التاريخ","الجغرافيا","الفلسفة"].concat(common)},
+ "12":{t:"البكالوريا",sci:["الرياضيات","الفيزياء","الكيمياء","علوم الحياة"].concat(common),lit:["التاريخ","الجغرافيا","الفلسفة"].concat(common)}
+};
+var cur=null,branch="sci";
+function show(id){["home","subjects","subject"].forEach(function(x){$(x).hidden=(x!==id)});window.scrollTo(0,0)}
+function render(){
+  var d=DATA[cur],split=!d.s;
+  $("gtitle").textContent=d.t;$("tabs").hidden=!split;
+  var arr=split?d[branch]:d.s,box=$("list");box.innerHTML="";
+  arr.forEach(function(n){
+    var b=document.createElement("button");
+    b.className="subject";b.textContent=n;
+    b.onclick=function(){$("stitle").textContent=n;show("subject")};
+    box.appendChild(b);
+  });
+}
+document.querySelectorAll(".grade").forEach(function(b){
+  b.onclick=function(){cur=b.dataset.g;branch="sci";
+    document.querySelectorAll(".tab").forEach(function(t){t.setAttribute("aria-pressed",t.dataset.b==="sci")});
+    render();show("subjects")};
+});
+document.querySelectorAll(".tab").forEach(function(t){
+  t.onclick=function(){branch=t.dataset.b;
+    document.querySelectorAll(".tab").forEach(function(x){x.setAttribute("aria-pressed",x===t)});render()};
+});
+$("back1").onclick=function(){show("home")};
+$("back2").onclick=function(){show("subjects")};
+</script>
+</body>
+</html>
