@@ -22,11 +22,46 @@ p.sub{color:var(--muted);margin:0 0 28px;font-size:17px;line-height:1.7}
 .tabs{display:flex;gap:8px;margin:0 0 20px}
 .tab{flex:1;padding:12px;border-radius:12px;border:1px solid var(--line);background:none;color:var(--muted);font:inherit;font-weight:700;cursor:pointer}
 .tab[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.tab:disabled{opacity:.35;cursor:default}
 .list{display:flex;flex-direction:column;gap:10px}
 .subject{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:18px;color:var(--text);font:inherit;font-size:18px;font-weight:700;text-align:right;cursor:pointer}
 .empty{background:var(--surface);border:1px dashed var(--line);border-radius:16px;padding:28px 20px;color:var(--muted);line-height:1.8;font-size:17px}
 :focus-visible{outline:2px solid var(--accent);outline-offset:3px}
 [hidden]{display:none!important}
+
+.card{display:flex;flex-direction:column;gap:6px;width:100%;background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:18px;color:var(--text);font:inherit;text-align:right;cursor:pointer;margin-bottom:10px}
+.card b{font-size:19px;font-weight:900}
+.card span{color:var(--muted);font-size:14px}
+.card.acc{background:var(--accent);border-color:var(--accent);color:#fff}
+.card.acc span{color:rgba(255,255,255,.85)}
+.card:disabled{opacity:.4;cursor:default}
+.lbl{font-weight:700;margin:22px 0 10px;font-size:17px}
+.lbl small{color:var(--muted);font-weight:400}
+.stepper{display:flex;gap:10px;align-items:center}
+.stepper button{width:54px;height:54px;border-radius:14px;border:1px solid var(--line);background:var(--surface);color:var(--text);font:inherit;font-size:26px;cursor:pointer}
+.stepper input{flex:1;min-width:0;height:54px;border-radius:14px;border:1px solid var(--line);background:var(--surface);color:var(--text);font:inherit;font-size:22px;font-weight:700;text-align:center}
+.cta{width:100%;padding:16px;border-radius:14px;border:0;background:var(--accent);color:#fff;font:inherit;font-size:18px;font-weight:900;cursor:pointer;margin-top:26px}
+.cta:disabled{opacity:.4;cursor:default}
+.cta.ghost{background:none;border:1px solid var(--line);color:var(--text)}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.row2 .cta{margin-top:18px}
+.qbar{display:flex;justify-content:space-between;align-items:center;font-weight:700;margin-bottom:10px}
+#qtimer{font-variant-numeric:tabular-nums;font-size:22px}
+#qtimer.low{color:var(--accent)}
+.bar{height:6px;background:var(--line);border-radius:6px;overflow:hidden;margin-bottom:24px}
+.bar i{display:block;height:100%;width:0;background:var(--accent);transition:width .3s}
+.qtext{font-size:22px;font-weight:700;line-height:1.7;margin-bottom:20px}
+.opt{display:block;width:100%;text-align:right;padding:16px;margin-bottom:10px;border-radius:14px;border:1px solid var(--line);background:var(--surface);color:var(--text);font:inherit;font-size:18px;cursor:pointer}
+.opt[aria-pressed="true"]{border-color:var(--accent);box-shadow:0 0 0 2px var(--accent) inset}
+textarea{width:100%;min-height:150px;padding:14px;border-radius:14px;border:1px solid var(--line);background:var(--surface);color:var(--text);font:inherit;font-size:17px;line-height:1.7;resize:vertical}
+.model{margin-top:14px;padding:16px;border-radius:14px;border:1px dashed var(--accent);line-height:1.8;font-size:17px}
+.score{text-align:center;padding:20px 0 6px}
+.score b{display:block;font-size:56px;font-weight:900}
+.score span{color:var(--muted);font-size:17px;line-height:1.8}
+.review{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:16px;margin-bottom:10px;line-height:1.8}
+.review p{margin:6px 0 0;font-size:16px}
+.review .bad{color:var(--accent)}
+.review .good{color:#25a35a}
 
 #splash{position:fixed;inset:0;z-index:50;background:radial-gradient(circle at 50% 45%,#1a0614 0%,#04010a 75%);transition:opacity .8s ease}
 #splash.out{opacity:0;pointer-events:none}
@@ -68,7 +103,50 @@ p.sub{color:var(--muted);margin:0 0 28px;font-size:17px;line-height:1.7}
   <section id="subject" hidden>
     <button class="back" id="back2">‹ المواد</button>
     <h1 id="stitle"></h1>
-    <div class="empty">هنا ستظهر الدروس والاختبارات. نبنيها في الخطوة القادمة.</div>
+    <div id="sbody"></div>
+  </section>
+
+  <section id="setup" hidden>
+    <button class="back" id="back3">‹ رجوع</button>
+    <h1 id="setitle"></h1>
+    <p class="sub" id="setsub" style="margin-bottom:6px"></p>
+    <div class="lbl">نوع الاختبار</div>
+    <div class="tabs" id="typeTabs" style="margin:0">
+      <button class="tab" data-t="mcq" aria-pressed="true">مؤتمت</button>
+      <button class="tab" data-t="wr" aria-pressed="false">تحريري</button>
+    </div>
+    <div class="empty" id="noq" hidden style="margin-top:16px">ما في أسئلة بهذا القسم بعد. أضفها في ملف الأسئلة.</div>
+    <div class="lbl">عدد الأسئلة <small id="avail"></small></div>
+    <div class="stepper">
+      <button id="qp" aria-label="زيادة">+</button>
+      <input id="qn" type="number" inputmode="numeric">
+      <button id="qm" aria-label="إنقاص">−</button>
+    </div>
+    <div class="lbl">الوقت بالدقائق</div>
+    <div class="stepper">
+      <button id="tp" aria-label="زيادة">+</button>
+      <input id="tn" type="number" inputmode="numeric">
+      <button id="tm" aria-label="إنقاص">−</button>
+    </div>
+    <button class="cta" id="startQ">ابدأ الاختبار</button>
+  </section>
+
+  <section id="quiz" hidden>
+    <button class="back" id="qend">إنهاء الاختبار</button>
+    <div class="qbar"><span id="qprog"></span><span id="qtimer"></span></div>
+    <div class="bar"><i id="qfill"></i></div>
+    <div class="qtext" id="qtext"></div>
+    <div id="qbody"></div>
+    <div id="qact"></div>
+  </section>
+
+  <section id="result" hidden>
+    <div class="score"><b id="rscore"></b><span id="rpct"></span><br><span id="rmsg"></span></div>
+    <div id="rrev"></div>
+    <div class="row2">
+      <button class="cta" id="again">إعادة الاختبار</button>
+      <button class="cta ghost" id="tosub">رجوع للمادة</button>
+    </div>
   </section>
 </main>
 </div>
@@ -98,12 +176,10 @@ function size(){
 }
 
 function buildSprites(){
-  // نجمة لامعة
   starSp=mk(64,64);var g=starSp.getContext("2d");
   g.translate(32,32);g.shadowColor="#ffd45a";g.shadowBlur=10;g.fillStyle="#fff";
   g.beginPath();g.moveTo(0,-24);g.quadraticCurveTo(0,0,24,0);g.quadraticCurveTo(0,0,0,24);
   g.quadraticCurveTo(0,0,-24,0);g.quadraticCurveTo(0,0,0,-24);g.fill();
-  // قلب ذهبي صغير
   heartSp=mk(64,64);g=heartSp.getContext("2d");
   g.translate(32,32);g.scale(1.6,-1.6);g.fillStyle="#f7c948";g.shadowColor="#ffd45a";g.shadowBlur=8;
   g.beginPath();
@@ -115,11 +191,9 @@ function buildHeart(){
   sc0=Math.min(W*.9,H*.6)/34;S=40*sc0;
   hl.width=hl.height=Math.round(S*dpr);
   hc.setTransform(dpr,0,0,dpr,0,0);hc.clearRect(0,0,S,S);
-  // هالة وردية
   var hg=hc.createRadialGradient(S/2,S/2,0,S/2,S/2,S/2);
   hg.addColorStop(0,"rgba(255,0,102,.30)");hg.addColorStop(1,"rgba(255,0,102,0)");
   hc.fillStyle=hg;hc.fillRect(0,0,S,S);
-  // نقاط ملوّنة جاهزة (صور توهّج)
   var gl=PAL.map(function(c){
     var s=mk(32,32),q=s.getContext("2d"),r=q.createRadialGradient(16,16,0,16,16,16);
     r.addColorStop(0,rgba(c,1));r.addColorStop(.3,rgba(c,.9));r.addColorStop(1,rgba(c,0));
@@ -163,11 +237,9 @@ function buildName(){
   var cx=W/2,by=H*.5+fs*.3;
   nc.font=font;
   var tw=nc.measureText(NAME).width,left=cx-tw/2;
-  // صندوق صغير حول الاسم فقط
   bx=Math.max(0,cx-tw/2-fs*.4);by0=Math.max(0,by-fs*1.15);
   bw=Math.min(W-bx,tw+fs*.8);bh=fs*1.7;
   nl.width=Math.round(bw*dpr);nl.height=Math.round(bh*dpr);
-  // أخذ عينات الحروف من لوحة صغيرة
   var oc=mk(Math.ceil(bw),Math.ceil(bh)),o=oc.getContext("2d");
   o.translate(-bx,-by0);o.font=font;o.textAlign="center";o.fillText(NAME,cx,by);
   var d=o.getImageData(0,0,oc.width,oc.height).data,step=Math.max(4,Math.round(fs/24));
@@ -208,7 +280,6 @@ function frame(now){
   var t=(now-t0)/1000+skip;lastT=t;
   ctx.globalAlpha=1;
   ctx.clearRect(0,0,W,H);
-  // غبار ذهبي
   ctx.fillStyle="#ffd98a";
   dust.forEach(function(d){
     var y=((d.y-t*d.v)%(H+20)+H+20)%(H+20)-10;
@@ -216,7 +287,6 @@ function frame(now){
     ctx.beginPath();ctx.arc(d.x,y,d.r,0,6.28);ctx.fill();
   });
   var ph=clamp((t-SW)/SWD,0,1);
-  // القلب: يكبر بسلاسة من الصفر
   if(ph<1){
     var u=clamp(t/GROW,0,1),k=1-Math.pow(1-u,3);
     var pulse=t>GROW?1+.035*Math.sin((t-GROW)*7):1;
@@ -224,7 +294,6 @@ function frame(now){
     ctx.globalAlpha=(1-ph)*Math.min(1,t/.2);
     ctx.drawImage(hl,W/2-w/2,H*.46-w/2,w,w);
   }
-  // الاسم
   if(ph>0){
     hearts.forEach(function(h){
       var y=((h.y-t*h.v)%(H+80)+H+80)%(H+80)-40,w=40*h.s;
@@ -254,37 +323,239 @@ $("enter").onclick=function(){
 };
 
 /* ===== التطبيق ===== */
-var common=["اللغة العربية","اللغة الإنكليزية","اللغة الفرنسية","التربية الدينية"];
+var SUBJ={math:"الرياضيات",physics:"الفيزياء",chemistry:"الكيمياء",biology:"علوم الحياة",history:"التاريخ",geography:"الجغرافيا",arabic:"اللغة العربية",english:"اللغة الإنكليزية",french:"اللغة الفرنسية",religion:"التربية الدينية",philosophy:"الفلسفة"};
 var DATA={
- "9":{t:"التاسع",s:["الرياضيات","الفيزياء","الكيمياء","علوم الحياة","التاريخ","الجغرافيا"].concat(common)},
- "10":{t:"العاشر",s:["الرياضيات","الفيزياء","الكيمياء","علوم الحياة","التاريخ","الجغرافيا"].concat(common)},
- "11":{t:"الحادي عشر",sci:["الرياضيات","الفيزياء","الكيمياء","علوم الحياة"].concat(common),lit:["التاريخ","الجغرافيا","الفلسفة"].concat(common)},
- "12":{t:"البكالوريا",sci:["الرياضيات","الفيزياء","الكيمياء","علوم الحياة"].concat(common),lit:["التاريخ","الجغرافيا","الفلسفة"].concat(common)}
+ "9":{t:"التاسع",s:["math","physics","chemistry","biology","history","geography","arabic","english","french","religion"]},
+ "10":{t:"العاشر",s:["math","physics","chemistry","biology","history","geography","arabic","english","french","religion"]},
+ "11":{t:"الحادي عشر",sci:["math","physics","chemistry","biology","arabic","english","french","religion"],lit:["history","geography","philosophy","arabic","english","french","religion"]},
+ "12":{t:"البكالوريا",sci:["math","physics","chemistry","biology","arabic","english","french","religion"],lit:["history","geography","philosophy","arabic","english","french","religion"]}
 };
-var cur=null,branch="sci";
-function show(id){["home","subjects","subject"].forEach(function(x){$(x).hidden=(x!==id)});window.scrollTo(0,0)}
+var cur=null,branch="sci",cache={},touchedT=false;
+var Z={id:null,lessons:[],scope:-1,type:"mcq",max:0,qs:[],i:0,score:0,log:[],end:0,mins:0,timer:0,done:false};
+var VIEWS=["home","subjects","subject","setup","quiz","result"];
+
+function el(t,c,x){var e=document.createElement(t);if(c)e.className=c;if(x)e.textContent=x;return e}
+function pad(n){return n<10?"0"+n:""+n}
+function num(id){return parseInt($(id).value,10)||0}
+function shuf(a){for(var i=a.length-1;i>0;i--){var j=Math.floor(Math.random()*(i+1)),t=a[i];a[i]=a[j];a[j]=t}return a}
+function show(id){VIEWS.forEach(function(x){$(x).hidden=(x!==id)});window.scrollTo(0,0)}
+function fname(g,b,id){return (g==="11"||g==="12")?g+"_"+b+"_"+id+".txt":g+"_"+id+".txt"}
+
+/* قراءة ملف الأسئلة */
+function parse(txt){
+  var lessons=[],L=null,Q=null,last="";
+  txt.replace(/^\uFEFF/,"").split(/\r?\n/).forEach(function(raw){
+    var line=raw.trim();
+    if(!line||line.indexOf("//")===0)return;
+    if(line.indexOf("##")===0){L={title:line.slice(2).trim(),mcq:[],wr:[]};lessons.push(L);Q=null;return}
+    if(!L)return;
+    var c=line.charAt(0),rest=line.slice(1).trim();
+    if(c==="?"){Q={type:"mcq",q:rest,opts:[],ans:-1,exp:""};L.mcq.push(Q);last="q"}
+    else if(c==="-"&&Q&&Q.type==="mcq"){Q.opts.push(rest);last="o"}
+    else if(c==="+"&&Q&&Q.type==="mcq"){Q.opts.push(rest);Q.ans=Q.opts.length-1;last="o"}
+    else if(c==="!"&&Q){Q.exp=rest;last="exp"}
+    else if(c===">"){Q={type:"wr",q:rest,model:""};L.wr.push(Q);last="q"}
+    else if(c==="="&&Q&&Q.type==="wr"){Q.model=rest;last="model"}
+    else if(Q){
+      if(last==="q")Q.q+=" "+line;
+      else if(last==="exp")Q.exp+=" "+line;
+      else if(last==="model")Q.model+=" "+line;
+      else if(last==="o")Q.opts[Q.opts.length-1]+=" "+line;
+    }
+  });
+  lessons.forEach(function(l){l.mcq=l.mcq.filter(function(q){return q.opts.length>1&&q.ans>=0})});
+  return lessons;
+}
+function load(g,b,id){
+  var f=fname(g,b,id);
+  if(cache[f])return Promise.resolve(cache[f]);
+  return fetch(f+"?v="+Date.now()).then(function(r){if(!r.ok)throw new Error("404");return r.text()})
+    .then(function(t){var p=parse(t);cache[f]=p;return p});
+}
+
+/* الصفوف والمواد */
 function render(){
   var d=DATA[cur],split=!d.s;
   $("gtitle").textContent=d.t;$("tabs").hidden=!split;
   var arr=split?d[branch]:d.s,box=$("list");box.innerHTML="";
-  arr.forEach(function(n){
-    var b=document.createElement("button");
-    b.className="subject";b.textContent=n;
-    b.onclick=function(){$("stitle").textContent=n;show("subject")};
+  arr.forEach(function(id){
+    var b=el("button","subject",SUBJ[id]);
+    b.onclick=function(){openSubject(id)};
     box.appendChild(b);
   });
 }
 document.querySelectorAll(".grade").forEach(function(b){
   b.onclick=function(){cur=b.dataset.g;branch="sci";
-    document.querySelectorAll(".tab").forEach(function(t){t.setAttribute("aria-pressed",t.dataset.b==="sci")});
+    document.querySelectorAll("#tabs .tab").forEach(function(t){t.setAttribute("aria-pressed",t.dataset.b==="sci")});
     render();show("subjects")};
 });
-document.querySelectorAll(".tab").forEach(function(t){
+document.querySelectorAll("#tabs .tab").forEach(function(t){
   t.onclick=function(){branch=t.dataset.b;
-    document.querySelectorAll(".tab").forEach(function(x){x.setAttribute("aria-pressed",x===t)});render()};
+    document.querySelectorAll("#tabs .tab").forEach(function(x){x.setAttribute("aria-pressed",x===t)});render()};
 });
 $("back1").onclick=function(){show("home")};
 $("back2").onclick=function(){show("subjects")};
+$("back3").onclick=function(){show("subject")};
+
+/* المادة: الدروس + الاختبار الشامل */
+function openSubject(id){
+  Z.id=id;Z.lessons=[];
+  $("stitle").textContent=SUBJ[id];
+  var box=$("sbody");box.innerHTML="";box.appendChild(el("div","empty","جاري تحميل الدروس..."));
+  show("subject");
+  load(cur,branch,id).then(function(ls){Z.lessons=ls;renderLessons()}).catch(function(){
+    box.innerHTML="";
+    box.appendChild(el("div","empty","ما لقيت ملف الأسئلة. ضع ملفاً باسم "+fname(cur,branch,id)+" بجانب index.html ثم أعد المحاولة."));
+  });
+}
+function renderLessons(){
+  var box=$("sbody");box.innerHTML="";
+  if(!Z.lessons.length){box.appendChild(el("div","empty","الملف موجود لكن ما فيه دروس. ابدأ كل درس بسطر ## عنوان الدرس"));return}
+  var tm=0,tw=0;
+  Z.lessons.forEach(function(l){tm+=l.mcq.length;tw+=l.wr.length});
+  var all=el("button","card acc");
+  all.appendChild(el("b","","اختبار شامل لكل المادة"));
+  all.appendChild(el("span","",tm+" مؤتمت · "+tw+" تحريري"));
+  all.onclick=function(){openSetup(-1)};
+  box.appendChild(all);
+  Z.lessons.forEach(function(l,k){
+    var c=el("button","card");
+    c.appendChild(el("b","",l.title));
+    c.appendChild(el("span","",l.mcq.length+" مؤتمت · "+l.wr.length+" تحريري"));
+    c.disabled=!(l.mcq.length+l.wr.length);
+    c.onclick=function(){openSetup(k)};
+    box.appendChild(c);
+  });
+}
+
+/* إعداد الاختبار */
+function pool(type){
+  var out=[];
+  Z.lessons.forEach(function(l,k){if(Z.scope<0||Z.scope===k)out=out.concat(l[type])});
+  return out;
+}
+function setQ(v){
+  v=clamp(v,Math.min(1,Z.max),Z.max);
+  $("qn").value=v;
+  if(!touchedT)$("tn").value=Math.max(1,v*(Z.type==="wr"?3:1));
+}
+function setT(v){$("tn").value=clamp(v,1,180)}
+function refreshSetup(){
+  var cm=pool("mcq").length,cw=pool("wr").length,tabs=$("typeTabs").children;
+  tabs[0].disabled=!cm;tabs[1].disabled=!cw;
+  if(Z.type==="mcq"&&!cm&&cw)Z.type="wr";
+  if(Z.type==="wr"&&!cw&&cm)Z.type="mcq";
+  tabs[0].setAttribute("aria-pressed",Z.type==="mcq");
+  tabs[1].setAttribute("aria-pressed",Z.type==="wr");
+  Z.max=Z.type==="mcq"?cm:cw;
+  $("avail").textContent=Z.max?"(المتاح: "+Z.max+")":"";
+  $("startQ").disabled=!Z.max;
+  $("noq").hidden=!!Z.max;
+  touchedT=false;
+  setQ(Math.min(10,Z.max));
+}
+function openSetup(scope){
+  Z.scope=scope;Z.type="mcq";
+  $("setitle").textContent=scope<0?"اختبار شامل":Z.lessons[scope].title;
+  $("setsub").textContent=SUBJ[Z.id];
+  show("setup");refreshSetup();
+}
+$("typeTabs").children[0].onclick=function(){Z.type="mcq";refreshSetup()};
+$("typeTabs").children[1].onclick=function(){Z.type="wr";refreshSetup()};
+$("qp").onclick=function(){setQ(num("qn")+1)};
+$("qm").onclick=function(){setQ(num("qn")-1)};
+$("qn").onchange=function(){setQ(num("qn"))};
+$("tp").onclick=function(){touchedT=true;setT(num("tn")+1)};
+$("tm").onclick=function(){touchedT=true;setT(num("tn")-1)};
+$("tn").onchange=function(){touchedT=true;setT(num("tn"))};
+
+/* الاختبار */
+function startQuiz(){
+  var n=clamp(num("qn"),1,Z.max),mins=clamp(num("tn"),1,180);
+  Z.qs=shuf(pool(Z.type).slice()).slice(0,n).map(function(q){
+    if(q.type!=="mcq")return q;
+    var idx=q.opts.map(function(_,i){return i});shuf(idx);
+    return {type:"mcq",q:q.q,exp:q.exp,opts:idx.map(function(i){return q.opts[i]}),ans:idx.indexOf(q.ans)};
+  });
+  Z.i=0;Z.score=0;Z.log=[];Z.mins=mins;Z.done=false;
+  Z.end=Date.now()+mins*60000;
+  clearInterval(Z.timer);tick();Z.timer=setInterval(tick,500);
+  show("quiz");showQ();
+}
+function tick(){
+  var r=Math.max(0,Z.end-Date.now()),s=Math.ceil(r/1000);
+  $("qtimer").textContent=pad(Math.floor(s/60))+":"+pad(s%60);
+  $("qtimer").className=s<=30?"low":"";
+  if(r<=0)finish(true);
+}
+function cta(text,fn,cls){var b=el("button","cta"+(cls?" "+cls:""),text);b.onclick=fn;return b}
+function advance(){Z.i++;if(Z.i>=Z.qs.length)finish(false);else showQ()}
+function showQ(){
+  var q=Z.qs[Z.i],b=$("qbody"),a=$("qact");
+  $("qprog").textContent=(Z.i+1)+" / "+Z.qs.length;
+  $("qfill").style.width=(Z.i/Z.qs.length*100)+"%";
+  $("qtext").textContent=q.q;
+  b.innerHTML="";a.innerHTML="";
+  if(q.type==="mcq"){
+    var sel=-1,next;
+    q.opts.forEach(function(o,k){
+      var bt=el("button","opt",o);
+      bt.onclick=function(){
+        sel=k;
+        Array.prototype.forEach.call(b.children,function(x,j){x.setAttribute("aria-pressed",j===k)});
+        next.disabled=false;
+      };
+      b.appendChild(bt);
+    });
+    next=cta("التالي",function(){
+      var ok=sel===q.ans;
+      Z.log.push({q:q,sel:sel,ok:ok});if(ok)Z.score++;advance();
+    });
+    next.disabled=true;a.appendChild(next);
+  }else{
+    var ta=document.createElement("textarea");ta.placeholder="اكتب إجابتك هنا...";b.appendChild(ta);
+    a.appendChild(cta("عرض الإجابة النموذجية",function(){
+      ta.readOnly=true;
+      b.appendChild(el("div","model",q.model||"لا توجد إجابة نموذجية لهذا السؤال"));
+      a.innerHTML="";
+      var row=el("div","row2");
+      row.appendChild(cta("أجبت صحيحاً",function(){Z.log.push({q:q,ans:ta.value,ok:true});Z.score++;advance()}));
+      row.appendChild(cta("أخطأت",function(){Z.log.push({q:q,ans:ta.value,ok:false});advance()},"ghost"));
+      a.appendChild(row);
+    }));
+  }
+}
+function finish(timeUp){
+  if(Z.done)return;Z.done=true;clearInterval(Z.timer);
+  for(var k=Z.log.length;k<Z.qs.length;k++)Z.log.push({q:Z.qs[k],ok:false,skipped:true});
+  var n=Z.qs.length,pc=Math.round(Z.score/n*100);
+  $("rscore").textContent=Z.score+" / "+n;
+  $("rpct").textContent=pc+"%";
+  $("rmsg").textContent=(timeUp?"انتهى الوقت. ":"")+(pc>=90?"ممتاز، أنت جاهز 🖤":pc>=70?"جيد جداً، قليل من المراجعة وتصير ممتاز":pc>=50?"مقبول، راجع أخطاءك وأعد المحاولة":"تحتاج مراجعة أكثر، لا تيأس وأعد المحاولة");
+  var rev=$("rrev");rev.innerHTML="";
+  var wrong=Z.log.filter(function(x){return !x.ok});
+  if(wrong.length){
+    rev.appendChild(el("div","lbl","راجع أخطاءك ("+wrong.length+")"));
+    wrong.forEach(function(x){
+      var d=el("div","review");
+      d.appendChild(el("b","",x.q.q));
+      if(x.q.type==="mcq"){
+        d.appendChild(el("p","bad","إجابتك: "+(x.sel>=0?x.q.opts[x.sel]:"لم تجب")));
+        d.appendChild(el("p","good","الصحيحة: "+x.q.opts[x.q.ans]));
+        if(x.q.exp)d.appendChild(el("p","",x.q.exp));
+      }else{
+        if(x.skipped)d.appendChild(el("p","bad","لم تجب"));
+        d.appendChild(el("p","good","الإجابة النموذجية: "+(x.q.model||"—")));
+      }
+      rev.appendChild(d);
+    });
+  }
+  show("result");
+}
+$("startQ").onclick=startQuiz;
+$("qend").onclick=function(){if(confirm("إنهاء الاختبار الآن؟"))finish(false)};
+$("again").onclick=function(){openSetup(Z.scope)};
+$("tosub").onclick=function(){show("subject")};
 </script>
 </body>
 </html>
